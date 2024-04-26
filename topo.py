@@ -1,11 +1,10 @@
-#!/usr/bin/python                                                                            
-                                                                                             
 from mininet.topo import Topo
 from mininet.net import Mininet
 from mininet.util import dumpNodeConnections
 from mininet.log import setLogLevel
 from mininet.cli import CLI
 from mininet.util import waitListening
+from time import sleep
 
 class SingleSwitchTopo(Topo):
     "Single switch connected to n hosts."
@@ -24,10 +23,11 @@ class SingleSwitchTopo(Topo):
         
 
 def start_sshd(hosts):
+    print("*** Starting sshd on hosts:\n")
     for host in hosts:
         host.cmd( '/usr/sbin/sshd -D &')
-    for server in hosts:
-        waitListening( server=server, port=22, timeout=5 )
+    print( "\n*** Waiting for ssh daemons to start")
+    sleep(5)
     print( "\n*** Hosts are running sshd at the following addresses:\n" )
     for host in hosts:
         print( host.name, host.IP(), '\n' )
@@ -44,7 +44,7 @@ def simpleTest():
     net.pingAll()
     print( "Testing sshd service" )
     start_sshd(net.hosts)
-    #CLI(net)
+    CLI(net)
     net.stop()
 
 if __name__ == '__main__':
