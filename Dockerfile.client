@@ -1,0 +1,19 @@
+# Use Ubuntu as base image
+FROM ubuntu:latest
+
+# Install OpenSSH client
+RUN apt-get update && apt-get install -y openssh-client
+
+# Create a user with arguments passed in
+ARG USERNAME=user
+ARG PASSWORD=password
+RUN useradd -rm -d /home/$USERNAME -s /bin/bash -g root -G sudo -u 1001 $USERNAME && \
+    echo "$USERNAME:$PASSWORD" | chpasswd && \
+    mkdir /var/run/sshd
+
+# Switch to user and set the working directory
+
+USER $USERNAME
+WORKDIR /home/$USERNAME
+
+CMD tail -f /dev/null

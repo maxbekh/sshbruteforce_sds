@@ -2,7 +2,7 @@ services:
   client1:
     build:
       context: .
-      target: client_base
+      dockerfile: Dockerfile.client
       args:
         USERNAME: bob
         PASSWORD: ilovemymommy
@@ -13,8 +13,9 @@ services:
   attacker:
     build:
       context: .
-      target: client_base
+      dockerfile: Dockerfile.attacker
       args:
+        ATTACKER: true
         USERNAME: attacker
         PASSWORD: tn20tn24
     networks:
@@ -24,10 +25,13 @@ services:
   server:
     build:
       context: .
-      target: server_base
+      dockerfile: Dockerfile.server
       args:
+        SERVER: true
         USERNAME: bob
         PASSWORD: ilovemymommy
+    ports:
+      - "2222:22"
     networks:
       my_network:
         ipv4_address: 10.0.0.2

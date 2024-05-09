@@ -1,0 +1,23 @@
+# Use the latest Ubuntu LTS image as the base
+FROM ubuntu:latest
+
+# Create a user with the arguments passed in
+ARG USERNAME=user
+ARG PASSWORD=password
+RUN useradd -rm -d /home/$USERNAME -s /bin/bash -g root -G sudo -u 1001 $USERNAME && \
+    echo "$USERNAME:$PASSWORD" | chpasswd && \
+    mkdir /var/run/sshd
+
+# Update package lists and install OpenSSH server
+RUN apt-get update && \
+    apt-get install -y openssh-server
+
+# Accept password authentication
+RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+
+# Expose the default SSH port
+EXPOSE 22
+
+# Set the default command to start the SSH server
+CMD ["/usr/sbin/sshd", "-D"]
