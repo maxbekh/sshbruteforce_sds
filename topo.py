@@ -23,8 +23,26 @@ class SingleSwitchTopo(Topo):
         attacker1 = self.addHost('attacker1',ip="10.0.0.4/24")
         self.addLink(attacker1, switch)
         
-        
 
+
+def init_users(hosts):
+    print("*** Creating users on hosts\n")
+    for host in hosts:
+        if host.name == 'server1':
+            host.cmd(f'echo "bob:test" | sudo chpasswd')
+            # add user to sudoers with usermod -aG sudo <username>
+            host.cmd('sudo usermod -aG sudo bob')
+        if host.name == 'client1':
+            host.cmd(f'echo "bob:test" | sudo chpasswd')
+            host.cmd('sudo usermod -aG sudo bob')
+        if host.name == 'attacker1':
+            host.cmd(f'echo "attacker:test" | sudo chpasswd')
+            host.cmd('sudo usermod -aG sudo attacker')
+        
+            
+    
+    
+    
 def start_sshd(hosts):
     print("*** Starting sshd on hosts:\n")
     for host in hosts:

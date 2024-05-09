@@ -1,0 +1,47 @@
+services:
+  client1:
+    build:
+      context: .
+      target: client_base
+      args:
+        USERNAME: bob
+        PASSWORD: ilovemymommy
+    networks:
+      my_network:
+        ipv4_address: 10.0.0.3
+
+  attacker:
+    build:
+      context: .
+      target: client_base
+      args:
+        USERNAME: attacker
+        PASSWORD: tn20tn24
+    networks:
+      my_network:
+        ipv4_address: 10.0.0.4
+
+  server:
+    build:
+      context: .
+      target: server_base
+      args:
+        USERNAME: bob
+        PASSWORD: ilovemymommy
+    networks:
+      my_network:
+        ipv4_address: 10.0.0.2
+
+  ryu:
+    image: osrg/ryu
+    command: ryu-manager --verbose ryu.app.simple_switch_13
+    ports:
+      - "6653:6653"  # OpenFlow port
+
+networks:
+  my_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.0.0/24
