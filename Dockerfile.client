@@ -2,11 +2,11 @@
 FROM ubuntu:latest
 
 # Install OpenSSH client
-RUN apt-get update && apt-get install -y openssh-client
+RUN apt-get update && apt-get install -y openssh-client sudo
 
 # Create a user with arguments passed in
-ARG USERNAME=user
-ARG PASSWORD=password
+ARG USERNAME=bob
+ARG PASSWORD=1secret
 RUN useradd -rm -d /home/$USERNAME -s /bin/bash -g root -G sudo -u 1001 $USERNAME && \
     echo "$USERNAME:$PASSWORD" | chpasswd && \
     mkdir /var/run/sshd
