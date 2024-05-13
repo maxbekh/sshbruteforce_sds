@@ -6,22 +6,13 @@ Welcome to the SSH Bruteforce SDS (Software Defined Security) project! This proj
 
 ## Requirements
 
-- Python 3.x
-- Mininet
+- GNS3 ?
 
 ## Installation
 
 1. Clone the SSH Bruteforce SDS project repository:
     ```
     git clone https://github.com/maxbekh/sshbruteforce_sds.git
-    ```
-
-2. Clone and install Mininet:
-    ```
-    git clone https://github.com/mininet/mininet
-    cd mininet
-    git checkout -b mininet-2.3.1b4
-    util/install.sh -a
     ```
 
 ## Usage
@@ -31,16 +22,8 @@ Welcome to the SSH Bruteforce SDS (Software Defined Security) project! This proj
     cd sshbruteforce_sds
     ```
 
-2. Launch the network topology setup script with superuser privileges:
-    ```
-    sudo python3 topo.py
-    ```
-
 ## Additional Notes
 
-- Ensure that Python 3.x is installed on your system.
-- Mininet is required to emulate the network environment. Make sure to clone the Mininet repository as instructed in the installation steps.
-- Running the `topo.py` script sets up the network topology for the SSH bruteforce demonstration.
 
 ## Disclaimer
 
