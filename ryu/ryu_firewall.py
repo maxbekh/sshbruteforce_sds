@@ -22,6 +22,7 @@ class SSHConnectionMonitor(app_manager.RyuApp):
         datapath = msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        in_port = msg.match['in_port']
 
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocols(ethernet.ethernet)[0]
@@ -33,6 +34,29 @@ class SSHConnectionMonitor(app_manager.RyuApp):
             self.log_ssh_attempt(src_ip)
             if self.check_ssh_threshold(src_ip):
                 self.block_ip(datapath, parser, ofproto, src_ip)
+            else:
+                # Install a high-priority flow rule to forward packets from non-blocked IPs
+                match = parser.OFPMatch(eth_type=0x0800, ipv4_src=src_ip)
+                actions = [parser.OFPActionOutput(ofproto.OFPP_NORMAL)]
+                inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+                mod = parser.OFPFlowMod(datapath=datapath, priority=10, match=match, instructions=inst)
+                datapath.send_msg(mod)
+        else:
+            # Install a low-priority flow rule to forward non-SSH packets from non-blocked IPs
+            if ip4 and ip4.src not in self.blocked_ips:
+                match = parser.OFPMatch(eth_type=0x0800, ipv4_src=ip4.src)
+                actions = [parser.OFPActionOutput(ofproto.OFPP_NORMAL)]
+                inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+                mod = parser.OFPFlowMod(datapath=datapath, priority=1, match=match, instructions=inst)
+                datapath.send_msg(mod)
+
+        # Optionally, you can also forward the packet out to avoid packet loss
+        data = None
+        if msg.buffer_id == ofproto.OFP_NO_BUFFER:
+            data = msg.data
+        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
+                                  in_port=in_port, actions=actions, data=data)
+        datapath.send_msg(out)
 
     def log_ssh_attempt(self, src_ip):
         self.logger.info(f"SSH connection attempt from {src_ip}")
@@ -54,8 +78,3 @@ class SSHConnectionMonitor(app_manager.RyuApp):
     def block_ip(self, datapath, parser, ofproto, src_ip):
         self.logger.info(f"Blocking IP address {src_ip} due to excessive SSH connection attempts")
         self.blocked_ips.add(src_ip)
-        match = parser.OFPMatch(eth_type=0x0800, ipv4_src=src_ip)
-        actions = []
-        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
-        mod = parser.OFPFlowMod(datapath=datapath, priority=1, match=match, instructions=inst)
-        datapath.send_msg(mod)
