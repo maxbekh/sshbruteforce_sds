@@ -175,17 +175,16 @@ class FirewallSwitch(app_manager.RyuApp):
                 passed = True
                 
         if not passed:
-            print("got ssh packet but not blocked yet")
             # packet is ssh we verify if the source as already been blocked
             is_in = False
             for blocked in self.blocked_sources:
                 if eth.src == blocked[0]:
+                    print("got ssh packet for ", eth.src, "already blocked", blocked[1], "times")
                     is_in = True
                     if time.time() - blocked[2] > 10:
                         blocked[1] = 0
                         blocked[2] = time.time()
                     if blocked[1] > 10:
-                        print("finally blocked")
                         passed = False
                         break
                     else:
@@ -194,6 +193,7 @@ class FirewallSwitch(app_manager.RyuApp):
                         break
             # if the source is not blocked we add it to the list with count and time 
             if not is_in:
+                print("got ssh packet for ", eth.src, "first time")
                 self.blocked_sources.append([eth.src, 1,time.time()])
                 passed = True
             
@@ -295,5 +295,4 @@ class FirewallSwitch(app_manager.RyuApp):
             flux_id = self.fluxID(m['in_port'], m['eth_dst'], m['eth_src'], m['eth_type'], ip_proto, tcp_dst)
             if flux_id in self.flux.keys():
                 del self.flux[flux_id]
-            else:
-                print('WARNING : Orphaned OFPFlowRemoved : ', flux_id)
+            
