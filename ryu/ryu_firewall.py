@@ -10,6 +10,7 @@ class SSHFirewall(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
+        print("SSHFirewall::__init__")
         super(SSHFirewall, self).__init__(*args, **kwargs)
         self.ssh_attempts = {}
         self.blocked_ips = set()
@@ -22,6 +23,7 @@ class SSHFirewall(app_manager.RyuApp):
 
     @handler.set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def packet_in_handler(self, ev):
+        print("SSHFirewall::packet_in_handler")
         msg = ev.msg
         dp = msg.datapath
         ofp = dp.ofproto
