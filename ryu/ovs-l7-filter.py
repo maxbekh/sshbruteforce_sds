@@ -49,6 +49,7 @@ class FirewallSwitch(app_manager.RyuApp):
         self.fastMode = False
         self.filtered_ports = ['all']
         self.blocked_ports = []
+        self.unfiltered_ports = []
 
         self.pktAE = pktAnalyticsEngine();
         self.pktAE.lookFor('ssh')
