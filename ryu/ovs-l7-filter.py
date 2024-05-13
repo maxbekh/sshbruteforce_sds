@@ -177,9 +177,11 @@ class FirewallSwitch(app_manager.RyuApp):
             is_in = False
             for blocked in self.blocked_sources:
                 if eth.src == blocked[0]:
-                    print("got ssh packet for ", eth.src, "already blocked", blocked[1], "times")
+                    tested_time = time.time()-blocked[2]
+                    print("got ssh packet for ", eth.src, "already blocked", blocked[1], "times, last time was ", tested_time, "seconds ago")
                     is_in = True
-                    if time.time() - blocked[2] > 10:
+                    if tested_time > 1000:
+                        print("unblocked", eth.src, "after ", tested_time, "seconds")
                         blocked[1] = 0
                         blocked[2] = time.time()
                     if blocked[1] > 10:
