@@ -15,6 +15,7 @@ import hashlib
 
 MISS_SEND_LENGTH = 200
 BLOCK_IDLE_TIMEOUT = 30
+SUPER_FAST_MODE = False
 
 class FirewallSwitch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
