@@ -15,7 +15,6 @@ import hashlib
 
 MISS_SEND_LENGTH = 200
 BLOCK_IDLE_TIMEOUT = 30
-SUPER_FAST_MODE = False
 
 class FirewallSwitch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -34,8 +33,10 @@ class FirewallSwitch(app_manager.RyuApp):
 
     def getMatchAndFluxID(self, parser, in_port, eth_dst, eth_src, eth_type, ip_proto = 0, tcp_dst = 0):
         match_parameters = {'in_port' : in_port, 'eth_dst' : eth_dst, 'eth_src' : eth_src, 'eth_type' : eth_type, 'ip_proto' : ip_proto, 'tcp_dst' : tcp_dst}
-        if tcp_dst == 0: del match_parameters['tcp_dst']
-        if ip_proto == 0: del match_parameters['ip_proto']
+        if tcp_dst == 0: 
+            del match_parameters['tcp_dst']
+        if ip_proto == 0: 
+            del match_parameters['ip_proto']
 
         match = parser.OFPMatch(**match_parameters)
         flux_id = self.fluxID(in_port, eth_dst, eth_src, eth_type, ip_proto, tcp_dst)
@@ -54,11 +55,9 @@ class FirewallSwitch(app_manager.RyuApp):
         
         self.blocked_sources = []
 
-        self.pktAE = pktAnalyticsEngine();
+        self.pktAE = pktAnalyticsEngine()
         self.pktAE.lookFor('ssh')
 
-        #if SUPER_FAST_MODE: self.fastMode = False
-        if self.fastMode: print('WARNING : fastMode is on, some packets may pass through')
 
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -121,10 +120,6 @@ class FirewallSwitch(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
-        # If you hit this you might want to increase
-        # the "miss_send_length" of your switch
-        #if ev.msg.msg_len < ev.msg.total_len:
-        #    print("packet truncated: only %s of %s bytes", ev.msg.msg_len, ev.msg.total_len)
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
@@ -173,6 +168,8 @@ class FirewallSwitch(app_manager.RyuApp):
             AE = self.pktAE.detectProtocol(pktdata)
             if not AE['blocked']:
                 passed = True
+            if not(dest_tcp_port in [22]):
+                passed = True  # allow all non-ssh packets
                 
         if not passed:
             # packet is ssh we verify if the source as already been blocked
