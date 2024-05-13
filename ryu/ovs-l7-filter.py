@@ -8,6 +8,7 @@ from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3, ether, ofproto_v1_5
 from ryu.lib.packet import ethernet, arp, packet, tcp, ipv4, in_proto, ether_types, packet
 from ryu.utils import binary_str
+import time
 
 from pktAnalyticsEngine import pktAnalyticsEngine
 import hashlib
@@ -50,6 +51,8 @@ class FirewallSwitch(app_manager.RyuApp):
         self.filtered_ports = ['all']
         self.blocked_ports = []
         self.unfiltered_ports = []
+        
+        self.blocked_sources = []
 
         self.pktAE = pktAnalyticsEngine();
         self.pktAE.lookFor('ssh')
@@ -170,9 +173,35 @@ class FirewallSwitch(app_manager.RyuApp):
             AE = self.pktAE.detectProtocol(pktdata)
             if not AE['blocked']:
                 passed = True
+                
+        if not passed:
+            print("got ssh packet but not blocked yet")
+            # packet is ssh we verify if the source as already been blocked
+            is_in = False
+            for blocked in self.blocked_sources:
+                if eth.src == blocked[0]:
+                    is_in = True
+                    if time.time() - blocked[2] > 10:
+                        blocked[1] = 0
+                        blocked[2] = time.time()
+                    if blocked[1] > 10:
+                        print("finally blocked")
+                        passed = False
+                        break
+                    else:
+                        blocked[1] += 1
+                        passed = True
+                        break
+            # if the source is not blocked we add it to the list with count and time 
+            if not is_in:
+                self.blocked_sources.append([eth.src, 1,time.time()])
+                passed = True
+            
 
         #packet failed to be accepted, we install flows to block it
+       
         if not passed:
+            
             print("blocked", AE['protocol'], str(source_tcp_port) + '-->' + str(dest_tcp_port), ':', "|||--- ", protocols, ip_proto, eth_type, in_port, eth.src)
             #install drop rules in table 0 with higher priority than the base rule [controller, resubmit(,2)]
             #so every blocked flux is handled by the switch and we stop getting packet_in
