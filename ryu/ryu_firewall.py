@@ -1,5 +1,6 @@
 from ryu.base import app_manager
 from ryu.controller import ofp_event
+from ryu.controller import handler
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.ofproto import ofproto_v1_3
 from datetime import datetime, timedelta
@@ -12,7 +13,7 @@ class SSHFirewall(app_manager.RyuApp):
         self.ssh_attempts = {}
         self.blocked_ips = set()
 
-    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+    @handler.set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def packet_in_handler(self, ev):
         msg = ev.msg
         dp = msg.datapath
