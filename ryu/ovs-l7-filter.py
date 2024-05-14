@@ -15,7 +15,6 @@ import hashlib
 
 MISS_SEND_LENGTH = 200
 BLOCK_IDLE_TIMEOUT = 30
-SUPER_FAST_MODE = False
 
 class FirewallSwitch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -48,8 +47,6 @@ class FirewallSwitch(app_manager.RyuApp):
         self.mac_to_port = {}
         self.flux = {}
 
-        #TODO : move to config (REST, yaml ?)
-        self.fastMode = False
         self.filtered_ports = ['all']
         self.blocked_ports = []
         self.unfiltered_ports = []
@@ -71,15 +68,15 @@ class FirewallSwitch(app_manager.RyuApp):
         #base rule is push to controller and resubmit to table 2
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,ofproto.OFPCML_NO_BUFFER)]
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,actions)]
-        if not SUPER_FAST_MODE: inst += [parser.OFPInstructionGotoTable(table_id=2)]
+        inst += [parser.OFPInstructionGotoTable(table_id=2)]
 
         mod = parser.OFPFlowMod(datapath=datapath, priority=0, match=parser.OFPMatch(), instructions=inst, table_id=0)
         datapath.send_msg(mod)
 
     @set_ev_cls(dpset.EventDP, MAIN_DISPATCHER)
     def datapath_change_handler(self, ev):
-        if ev.enter: #new datapath registered to the controller
-            datapath = ev.dp;
+        if ev.enter: 
+            datapath = ev.dp
             parser = datapath.ofproto_parser
             print("switch #" + str(datapath.id) + " joined")
             switch = api.get_switch(self, datapath.id)[0]
@@ -90,14 +87,12 @@ class FirewallSwitch(app_manager.RyuApp):
                     self.add_flow(datapath,1,block_match, None, None, 0, None)
             miss_len_cfg = parser.OFPSetConfig(datapath, ofproto_v1_3.OFPC_FRAG_MASK,MISS_SEND_LENGTH)
             datapath.send_msg(miss_len_cfg)
-            print("OK")
+            print("starting firewall on switch #" + str(datapath.id))
 
 
     def add_flow(self, datapath, priority, match, actions, buffer_id=None, table_id = 2, idle_timeout=60):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-
-        if SUPER_FAST_MODE and table_id == 2: table_id = 0
 
         if not actions: #drop
             inst = [parser.OFPInstructionActions(ofproto.OFPIT_CLEAR_ACTIONS, [])]
@@ -183,20 +178,20 @@ class FirewallSwitch(app_manager.RyuApp):
                         passed = False
                         break
                     elif blocked[1] > 10 and tested_time > 60*10:
-                        print("unblocked", eth.src, "after ", tested_time, "seconds")
+                        print("Unblocked", eth.src, "after ", tested_time, "seconds")
                         blocked[1] = 0
                         blocked[2] = time.time()
                         passed = True
                         break
                     else:
-                        print("got ssh packet for ", eth.src, "already seen", blocked[1], "times, last time was ", tested_time, "seconds ago")
+                        print("Got ssh packet for ", eth.src, "already seen", blocked[1], "times, last time was ", tested_time, "seconds ago")
                         blocked[1] += 1
                         blocked[2] = time.time()
                         passed = True
                         break
             # if the source is not blocked we add it to the list with count and time 
             if not is_in:
-                print("got ssh packet for ", eth.src, "first time")
+                print("Got ssh packet for ", eth.src, "first time")
                 self.blocked_sources.append([eth.src, 1,time.time()])
                 passed = True
             
@@ -205,7 +200,7 @@ class FirewallSwitch(app_manager.RyuApp):
        
         if not passed:
             
-            print("blocked", AE['protocol'], str(source_tcp_port) + '-->' + str(dest_tcp_port), ':', "|||--- ", protocols, ip_proto, eth_type, in_port, eth.src)
+            print("Blocked", AE['protocol'], str(source_tcp_port) + '-->' + str(dest_tcp_port), ':', "|||--- ", protocols, ip_proto, eth_type, in_port, eth.src)
             #install drop rules in table 0 with higher priority than the base rule [controller, resubmit(,2)]
             #so every blocked flux is handled by the switch and we stop getting packet_in
             block_match = parser.OFPMatch(in_port=in_port,
@@ -249,7 +244,7 @@ class FirewallSwitch(app_manager.RyuApp):
             if flux_id in self.flux.keys():
                 return
 
-            if not self.fastMode and 'tcp' in protocols and not hasData:
+            if 'tcp' in protocols and not hasData:
                 #let tcp handshakes go trough the controller
                 #and wait for the first packet with a payload to allow the route
                 pass
@@ -276,22 +271,9 @@ class FirewallSwitch(app_manager.RyuApp):
         msg = ev.msg
         dp = msg.datapath
         ofp = dp.ofproto
-        '''
-        if msg.reason == ofp.OFPRR_IDLE_TIMEOUT:
-            reason = 'IDLE TIMEOUT'
-        elif msg.reason == ofp.OFPRR_HARD_TIMEOUT:
-            reason = 'HARD TIMEOUT'
-        elif msg.reason == ofp.OFPRR_DELETE:
-            reason = 'DELETE'
-        elif msg.reason == ofp.OFPRR_GROUP_DELETE:
-            reason = 'GROUP DELETE'
-        else:
-            reason = 'unknown'
-        '''
 
         if msg.reason == ofp.OFPRR_IDLE_TIMEOUT:
             #drop flows have timeout to not block the route indefinitely
-            #deleting the fluxID from self.flux allows us to check them again for blocked protocols
             m = msg.match
             tcp_dst = m['tcp_dst'] if 'tcp_dst' in m else 0
             ip_proto = m['ip_proto'] if 'ip_proto' in m else 0
