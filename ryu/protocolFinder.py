@@ -1,14 +1,14 @@
 import glob
 import re
 
-class pktAnalyticsEngine:
+class protocolFinder:
     def __init__(self):
         self.all_protocols = {};
         self.protocols = {};
         protocol = ''
         match = ''
         flag = 0
-        for filename in glob.glob('./pat_files/*.pat'):
+        for filename in glob.glob('./protocols_identifier/*.pat'):
             with open(filename) as f:
                 for line in f:
                     if line[0] != '#' and line.strip() != '' and line.split(' ')[0] != 'userspace':
@@ -18,7 +18,6 @@ class pktAnalyticsEngine:
                         elif flag == 1:
                             match = line.strip()
                             self.all_protocols[protocol] = re.compile(match.encode('ascii'), re.I);
-                            #self.all_protocols[protocol] = re.compile(match, re.I);
                             flag = 0
     def info(self, text):
         print('[pktAE] ' + text)
@@ -40,7 +39,6 @@ class pktAnalyticsEngine:
     def detectProtocol(self, pkt_payload):
         block = False;
         protocol = '';
-        #pkt_payload = pkt_payload.decode('charmap')
         for p in self.protocols.keys():
             if self.protocols[p].match(pkt_payload):
                 return {'blocked' : True, 'protocol' : p}
