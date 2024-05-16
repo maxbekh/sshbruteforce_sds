@@ -10,7 +10,7 @@ from ryu.lib.packet import ethernet, arp, packet, tcp, ipv4, in_proto, ether_typ
 from ryu.utils import binary_str
 import time
 
-from ryu.protocolFinder import protocolFinder
+from protocolFinder import protocolFinder
 import hashlib
 
 MISS_SEND_LENGTH = 200
