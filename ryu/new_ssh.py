@@ -42,21 +42,26 @@ class SimpleFirewall(app_manager.RyuApp):
         tcp_pkt = pkt.get_protocol(tcp.tcp)
 
         if ip_pkt and tcp_pkt and tcp_pkt.dst_port == 22:
-            src_ip = ip_pkt.src
-            current_time = time.time()
+            # Get the TCP payload
+            tcp_payload = tcp_pkt.payload
 
-            if src_ip not in self.attempt_counter:
-                self.attempt_counter[src_ip] = []
+            # Check if the payload contains the SSH version string
+            if b'SSH-2.0-' in tcp_payload:
+                src_ip = ip_pkt.src
+                current_time = time.time()
 
-            # Remove outdated attempts
-            self.attempt_counter[src_ip] = [timestamp for timestamp in self.attempt_counter[src_ip] if current_time - timestamp < BLOCK_IDLE_TIMEOUT]
+                if src_ip not in self.attempt_counter:
+                    self.attempt_counter[src_ip] = []
 
-            # Record current attempt
-            self.attempt_counter[src_ip].append(current_time)
-            print(f"SSH attempt from {src_ip}. Count: {len(self.attempt_counter[src_ip])}")
+                # Remove outdated attempts
+                self.attempt_counter[src_ip] = [timestamp for timestamp in self.attempt_counter[src_ip] if current_time - timestamp < BLOCK_IDLE_TIMEOUT]
 
-            if len(self.attempt_counter[src_ip]) > ATTEMPT_THRESHOLD:
-                self.block_ip(datapath, parser, src_ip, in_port)
+                # Record current attempt
+                self.attempt_counter[src_ip].append(current_time)
+                print(f"SSH attempt from {src_ip}. Current attempts: {len(self.attempt_counter[src_ip])}")
+
+                if len(self.attempt_counter[src_ip]) > ATTEMPT_THRESHOLD:
+                    self.block_ip(datapath, parser, src_ip, in_port)
 
         actions = [parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
         out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions, data=msg.data)
@@ -76,4 +81,3 @@ class SimpleFirewall(app_manager.RyuApp):
         )
         datapath.send_msg(mod)
         self.logger.info(f"Blocking IP {ip} for SSH attempts.")
-
