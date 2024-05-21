@@ -59,6 +59,7 @@ class SimpleFirewall(app_manager.RyuApp):
 
                 # Record current attempt
                 self.attempt_counter[src_ip].append(current_time)
+                print(f"SSH attempt from {src_ip}. Current attempts: {len(self.attempt_counter[src_ip])}")
 
                 if len(self.attempt_counter[src_ip]) > ATTEMPT_THRESHOLD:
                     self.block_ip(datapath, parser, src_ip, in_port)
