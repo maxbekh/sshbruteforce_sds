@@ -19,6 +19,10 @@ def setup_iptables():
     run_command("iptables -A FORWARD -p tcp -d 10.0.0.13 --dport 10022 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT")
     run_command("iptables -t nat -A POSTROUTING -j MASQUERADE")
 
+def populate_arptable(ip):
+    """Populate ARP table"""
+    run_command("ping -c1 ",ip)
+    
 def clear_iptables():
     """Clear iptables rules"""
     run_command("iptables -t nat -D PREROUTING -p tcp -d 10.0.0.11 --dport 22 -j DNAT --to-destination 10.0.0.13:10022")
@@ -62,8 +66,11 @@ if __name__ == "__main__":
     bob_ip = "10.0.0.12"
 
     try:
+        # Populate ARP table
+        populate_arptable(target_ip)
         # Setup iptables rules
         setup_iptables()
+        
 
         sent_packets_count = 0
         while True:
