@@ -3,27 +3,13 @@ FROM ubuntu:latest
 
 # Install Python 3 and pip
 RUN apt-get update && \
-    apt-get install -y python3 python3-pip git sudo curl wget python3.12-venv nmap && \
+    apt-get install -y python3 python3-pip git sudo curl wget python3.12-venv nmap net-tools iptables openssh-client && \
     apt-get clean
 
-# Install OpenSSH client
-RUN apt-get update && apt-get install -y openssh-client && \
-    apt-get clean
-
-# Create a user with arguments passed in
-ARG USERNAME=attacker
-ARG PASSWORD=tn20tn24
-RUN useradd -rm -d /home/$USERNAME -s /bin/bash -g root -G sudo -u 1001 $USERNAME && \
-    echo "$USERNAME:$PASSWORD" | chpasswd && \
-    mkdir /var/run/sshd
-
-# Switch to user and set the working directory
-USER $USERNAME
-WORKDIR /home/$USERNAME
-
-RUN wget https://github.com/pwnesia/ssb/releases/download/v0.1.1/ssb_0.1.1_linux_amd64.tar.gz && \
-    tar -xvzf ssb_0.1.1_linux_amd64.tar.gz && \
-    curl -O https://raw.githubusercontent.com/kkrypt0nn/wordlists/main/wordlists/usernames/multiple_sources_users.txt && \
-    curl -O https://raw.githubusercontent.com/kkrypt0nn/wordlists/main/wordlists/passwords/darkweb_2017.txt
+RUN git clone https://github.com/maxbekh/sshbruteforce_sds.git && \
+    cd sshbruteforce_sds && \
+    python3 -m venv venv && \
+    . venv/bin/activate && \
+    pip3 install -r requirements.txt
 
 CMD tail -f /dev/null
