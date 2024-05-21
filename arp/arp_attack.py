@@ -4,20 +4,20 @@ from scapy.layers.l2 import Ether, ARP
 from scapy.sendrecv import send
 import time
 
-def run_command(command):
+def run_command(command,ignore_errors=False):
     """Execute a shell command"""
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
-    if process.returncode != 0:
+    if process.returncode != 0 and not ignore_errors:
         print(f"Error executing command: {command}\n{stderr.decode()}")
     return stdout.decode()
 
 def setup_iptables():
     """Setup iptables rules"""
-    run_command("echo 1 > /proc/sys/net/ipv4/ip_forward")
-    run_command("iptables -t nat -A PREROUTING -p tcp -d 10.0.0.11 --dport 22 -j DNAT --to-destination 10.0.0.13:10022")
-    run_command("iptables -A FORWARD -p tcp -d 10.0.0.13 --dport 10022 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT")
-    run_command("iptables -t nat -A POSTROUTING -j MASQUERADE")
+    run_command("echo 1 > /proc/sys/net/ipv4/ip_forward", ignore_errors=True)
+    run_command("iptables -t nat -A PREROUTING -p tcp -d 10.0.0.11 --dport 22 -j DNAT --to-destination 10.0.0.13:10022", ignore_errors=True)
+    run_command("iptables -A FORWARD -p tcp -d 10.0.0.13 --dport 10022 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT", ignore_errors=True)
+    run_command("iptables -t nat -A POSTROUTING -j MASQUERADE", ignore_errors=True)
 
 def populate_arptable(ip):
     """Populate ARP table"""
