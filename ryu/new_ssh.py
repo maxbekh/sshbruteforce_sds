@@ -43,6 +43,9 @@ class SimpleFirewall(app_manager.RyuApp):
 
         if ip_pkt and tcp_pkt and tcp_pkt.dst_port == 22:
             # Get the TCP payload from the packet
+            print("payload should be :", pkt.protocols[-1])
+            payload = pkt.protocols[-1]
+            print(payload.bytes())
             for p in pkt.protocols:
                 if isinstance(p, tcp.tcp):
                     tcp_payload = p.data
