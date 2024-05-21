@@ -8,11 +8,11 @@ import time
 BLOCK_IDLE_TIMEOUT = 600  # 10 minutes in seconds
 ATTEMPT_THRESHOLD = 10
 
-class SimpleFirewall(app_manager.RyuApp):
+class SSHFirewall(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
-        super(SimpleFirewall, self).__init__(*args, **kwargs)
+        super(SSHFirewall, self).__init__(*args, **kwargs)
         self.attempt_counter = {}
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
