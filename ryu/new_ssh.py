@@ -40,30 +40,28 @@ class SimpleFirewall(app_manager.RyuApp):
         eth = pkt.get_protocols(ethernet.ethernet)[0]
         ip_pkt = pkt.get_protocol(ipv4.ipv4)
         tcp_pkt = pkt.get_protocol(tcp.tcp)
+        
+        data_pkt = pkt.protocols[-1] if isinstance(pkt.protocols[-1], (bytes,bytearray)) else None
 
-        if ip_pkt and tcp_pkt and tcp_pkt.dst_port == 22:
-            # Get the TCP payload from the packet
-            print("payload should be :", pkt.protocols[-1])
-            for p in pkt.protocols:
-                if isinstance(p, tcp.tcp):
-                    tcp_payload = ""
+        if ip_pkt and tcp_pkt and tcp_pkt.dst_port == 22 and data_pkt:
+            tcp_payload = data_pkt                   
+            
+            # Check if the payload contains the SSH version string
+            if b'SSH-2.0-' in tcp_payload:
+                src_ip = ip_pkt.src
+                current_time = time.time()
 
-                    # Check if the payload contains the SSH version string
-                    if b'SSH-2.0-' in tcp_payload:
-                        src_ip = ip_pkt.src
-                        current_time = time.time()
+                if src_ip not in self.attempt_counter:
+                    self.attempt_counter[src_ip] = []
 
-                        if src_ip not in self.attempt_counter:
-                            self.attempt_counter[src_ip] = []
+                # Remove outdated attempts
+                self.attempt_counter[src_ip] = [timestamp for timestamp in self.attempt_counter[src_ip] if current_time - timestamp < BLOCK_IDLE_TIMEOUT]
 
-                        # Remove outdated attempts
-                        self.attempt_counter[src_ip] = [timestamp for timestamp in self.attempt_counter[src_ip] if current_time - timestamp < BLOCK_IDLE_TIMEOUT]
+                # Record current attempt
+                self.attempt_counter[src_ip].append(current_time)
 
-                        # Record current attempt
-                        self.attempt_counter[src_ip].append(current_time)
-
-                        if len(self.attempt_counter[src_ip]) > ATTEMPT_THRESHOLD:
-                            self.block_ip(datapath, parser, src_ip, in_port)
+                if len(self.attempt_counter[src_ip]) > ATTEMPT_THRESHOLD:
+                    self.block_ip(datapath, parser, src_ip, in_port)
 
         actions = [parser.OFPActionOutput(ofproto.OFPP_FLOOD)]
         out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id, in_port=in_port, actions=actions, data=msg.data)
