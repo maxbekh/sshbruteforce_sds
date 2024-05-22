@@ -6,7 +6,7 @@ from ryu.lib.packet import packet, ethernet, arp, dhcp, ipv4, ether_types
 import logging
 
 HOSTS = {}
-PORT_COUNT = {}
+MAC_COUNT = {}
 ARP_FLOOD_THRESHOLD = 20
 IDLE_TIMEOUT = 60
 HARD_TIMEOUT = 60
@@ -42,13 +42,13 @@ class ARPFirewall(app_manager.RyuApp):
               parser.OFPFlowMod(datapath=datapath, priority=priority, match=match, instructions=inst)
         datapath.send_msg(mod)
 
-    def drop_packets_from_port(self, datapath, in_port):
+    def drop_arp_from_mac(self, datapath, src_mac):
         parser = datapath.ofproto_parser
-        match = parser.OFPMatch(in_port=in_port)
+        match = parser.OFPMatch(eth_type=ether.ETH_TYPE_ARP, eth_src=src_mac)
         inst = [parser.OFPInstructionActions(datapath.ofproto.OFPIT_CLEAR_ACTIONS, [])]
         mod = parser.OFPFlowMod(datapath=datapath, match=match, idle_timeout=IDLE_TIMEOUT, hard_timeout=HARD_TIMEOUT, priority=DROP_PRIORITY, instructions=inst)
         datapath.send_msg(mod)
-        self.logger.info(f"Dropping all packets from port {in_port}")
+        self.logger.info(f"Dropping all ARP packets from MAC {src_mac}")
 
     def handle_arp(self, pkt_arp, msg):
         arp_src_ip = pkt_arp.src_ip
@@ -57,21 +57,21 @@ class ARPFirewall(app_manager.RyuApp):
         arp_dst_mac = pkt_arp.dst_mac
         in_port = msg.match['in_port']
 
-        if in_port not in PORT_COUNT:
-            PORT_COUNT[in_port] = 1
+        if arp_src_mac not in MAC_COUNT:
+            MAC_COUNT[arp_src_mac] = 1
         else:
-            if PORT_COUNT[in_port] > ARP_FLOOD_THRESHOLD:
-                self.logger.warning("ARP Flood Attack detected on port %s! \n %s is sending %s packets", in_port, arp_src_mac, PORT_COUNT[in_port])
-                self.drop_packets_from_port(msg.datapath, in_port)
+            if MAC_COUNT[arp_src_mac] > ARP_FLOOD_THRESHOLD:
+                self.logger.warning("ARP Flood Attack detected from MAC %s! Sent %s packets", arp_src_mac, MAC_COUNT[arp_src_mac])
+                self.drop_arp_from_mac(msg.datapath, arp_src_mac)
                 return True
             if pkt_arp.opcode == arp.ARP_REQUEST:
-                PORT_COUNT[in_port] += 1
+                MAC_COUNT[arp_src_mac] += 1
 
         self.logger.debug(f"ARP Source IP: {arp_src_ip}, Destination IP: {arp_dst_ip}, Source MAC: {arp_src_mac}, Destination MAC: {arp_dst_mac}")
 
         if arp_src_ip in HOSTS and HOSTS[arp_src_ip] != arp_src_mac:
             self.logger.warning("ARP spoofing detected: IP %s has conflicting MACs (%s and %s)", arp_src_ip, HOSTS[arp_src_ip], arp_src_mac)
-            self.drop_packets_from_port(msg.datapath, in_port)
+            self.drop_arp_from_mac(msg.datapath, arp_src_mac)
             return True
 
         return False
