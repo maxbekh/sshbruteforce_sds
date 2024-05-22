@@ -34,8 +34,8 @@ Welcome to the SSH Bruteforce SDS (Software Defined Security) project! This proj
     ```
 
 ## Configuration
-I dont't know if gns3 project config file keep configuration of network interfaces but they are discussed in the final report.
-This includes the following:
+The project come with all pre-configured components, as it is discussed in the final report.
+In case something go wrong you can check the following:
 - Network interfaces for hosts
 - R1 config that is here: [R1 config](routers/cisco_r1_startup.cfg)
 - OpenVSwtich config:
@@ -63,6 +63,7 @@ For Bruteforce attack after a nmap scan to find the open ports, use the followin
 ```
 cd sshbruteforce_sds/bruteforce
 ./ssb -w darkweb_2017.txt -o password.txt -p 22 bob@192.168.122.192
+```
 
 ## Ryu
 To run the Ryu controller, use the following command:
