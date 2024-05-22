@@ -2,7 +2,7 @@
 FROM ubuntu:latest
 
 # Install OpenSSH client
-RUN apt-get update && apt-get install -y openssh-client sudo
+RUN apt-get update && apt-get install -y openssh-client sudo inetutils-ping  net-tools && apt-get clean
 
 # Create a user with arguments passed in
 ARG USERNAME=bob
