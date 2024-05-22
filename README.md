@@ -59,6 +59,10 @@ cd sshbruteforce_sds/arp
 source venv/bin/activate
 python3 arp_attack.py
 ```
+For Bruteforce attack after a nmap scan to find the open ports, use the following command:
+```
+cd sshbruteforce_sds/bruteforce
+./ssb -w darkweb_2017.txt -o password.txt -p 22 bob@192.168.122.192
 
 ## Ryu
 To run the Ryu controller, use the following command:
