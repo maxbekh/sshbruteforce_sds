@@ -61,7 +61,7 @@ class ARPFirewall(app_manager.RyuApp):
             PORT_COUNT[in_port] = 1
         else:
             if PORT_COUNT[in_port] > ARP_FLOOD_THRESHOLD:
-                self.logger.warning("ARP Flood Attack detected on port %s!", in_port)
+                self.logger.warning("ARP Flood Attack detected on port %s! \n %s is sending %s packets", in_port, arp_src_mac, PORT_COUNT[in_port])
                 self.drop_packets_from_port(msg.datapath, in_port)
                 return True
             if pkt_arp.opcode == arp.ARP_REQUEST:
